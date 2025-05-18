@@ -1,30 +1,35 @@
 				
-					#DATA CLEANING / DATA ANALYSIS
+					-- DATA CLEANING
+-- Remove Duplicates
+-- Standadize Data (Null Values/Blank Values
+-- Remove Unwanted Columns and Rows
                     
-                   #STEP 1 - CREATE A STAGING TABLE
+                   -- Remove Duplicates
 SELECT *
 FROM layoffs;
 
-CREATE TABLE layoffs_staging     #create staging table for the raw data
+-- * Create a staging table (it is best practice to work with a staging data)
+CREATE TABLE layoffs_staging 
 LIKE layoffs;
 
 SELECT *
 FROM layoffs_staging;
 
-INSERT layoffs_staging   #insert data into from raw data into staging table
+-- *insert data into from raw data into staging table
+INSERT layoffs_staging
 SELECT *
 FROM layoffs;
 
-					#STEP 2 - REMOVE DUPLICATE
-
+-- *Remove the duplicate
 SELECT *,
 ROW_NUMBER() OVER(
 PARTITION BY company, industry, total_laid_off, percentage_laid_off, `date`) AS row_num
 FROM layoffs_staging;
 
+-- *Create a CTE
 WITH duplicate_cte AS
 (
-SELECT *,
+SELECT *
 ROW_NUMBER() OVER(
 PARTITION BY company, location, industry, total_laid_off, percentage_laid_off, `date`, stage, country, funds_raised_millions) AS row_num
 FROM layoffs_staging
@@ -33,8 +38,8 @@ SELECT *
 FROM duplicate_cte
 WHERE row_num > 1;
 
-
-CREATE TABLE `layoffs_staging2` (                  #new table created 
+-- *Create another staging
+CREATE TABLE `layoffs_staging2` (                  
   `company` text,
   `location` text,
   `industry` text,
@@ -51,7 +56,7 @@ SELECT *
 FROM layoffs_staging2;
   
 INSERT INTO layoffs_staging2
-SELECT *,
+SELECT *
 ROW_NUMBER() OVER(
 PARTITION BY company, location, industry, total_laid_off, percentage_laid_off, `date`, stage, country, funds_raised_millions) AS row_num
 FROM layoffs_staging;
@@ -65,41 +70,44 @@ WHERE row_num > 1;
 SELECT *
 FROM layoffs_staging2;
 
-						#STEP 3 - STANDARDIZING DATA
+						-- STANDARDIZING DATA
+-- *Country Column 
 
-#country column hass some issues
-
-#SELECT company, TRIM(company)
-#FROM layoffs_staging2;
+SELECT company, TRIM(company)
+FROM layoffs_staging2;
 
 UPDATE layoffs_staging2
 SET company = TRIM(company);
 
-SELECT *
-FROM layoffs_staging2;
-
+-- *Industry Column
 SELECT *
 FROM layoffs_staging2
-ORDER BY 1;
+WHERE industry LIKE 'Crypto%';
 
+UPDATE layoffs_staging2
+SET industry = 'Crypto'
+WHERE industry LIKE 'Crypto%';
+
+-- *Country Column
 SELECT DISTINCT country
 FROM layoffs_staging2
-ORDER BY 1;          #There's a period(.) at the end of one of the UNITED STATES, we need to fix that.
+WHERE country LIKE 'United States%';
 
-#SELECT DISTINCT country, TRIM(TRAILING '.' FROM country)
-#FROM layoffs_staging2
-#ORDER BY 1;
+SELECT DISTINCT country, TRIM(TRAILING '.' FROM country)
+FROM layoffs_staging2
+ORDER BY 1;
 
 UPDATE layoffs_staging2
 SET country = TRIM(TRAILING '.' FROM country)
 WHERE country LIKE 'United States%';
 
+-- Date Column (Changing the date format from text)
 SELECT `date`
-FROM layoffs_staging2;     #We need change date to the date format and modify the column to change the data trype to DATE
+FROM layoffs_staging2;
 
-#SELECT `date`,
-#STR_TO_DATE(`date`, '%m/%d/%Y')
-#FROM layoffs_staging2;
+SELECT `date`,
+STR_TO_DATE(`date`, '%m/%d/%Y')
+FROM layoffs_staging2;
 
 UPDATE layoffs_staging2
 SET `date` = STR_TO_DATE(`date`, '%m/%d/%Y');
@@ -113,14 +121,33 @@ MODIFY COLUMN `date` DATE;
 SELECT *
 FROM layoffs_staging2;
 
-#DELETE THE ROW_NUM COLUMN
+-- *Delete Unwanted Column and rows
+
+-- 4. remove any columns and rows we need to
+
+SELECT *
+FROM world_layoffs.layoffs_staging2
+WHERE total_laid_off IS NULL;
+
+
+SELECT *
+FROM world_layoffs.layoffs_staging2
+WHERE total_laid_off IS NULL
+AND percentage_laid_off IS NULL;
+
+DELETE FROM world_layoffs.layoffs_staging2
+WHERE total_laid_off IS NULL
+AND percentage_laid_off IS NULL;
+
+SELECT * 
+FROM world_layoffs.layoffs_staging2;
 
 ALTER TABLE layoffs_staging2
 DROP COLUMN row_num;
 
-SELECT *
-FROM layoffs_staging2;
 
+SELECT * 
+FROM world_layoffs.layoffs_staging2;
 
   
 
