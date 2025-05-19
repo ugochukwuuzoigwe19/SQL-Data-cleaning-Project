@@ -1,7 +1,7 @@
 				
 					-- DATA CLEANING
 -- Remove Duplicates
--- Standadize Data (Null Values/Blank Values
+-- Standardize Data (Null Values/Blank Values
 -- Remove Unwanted Columns and Rows
                     
                    -- Remove Duplicates
